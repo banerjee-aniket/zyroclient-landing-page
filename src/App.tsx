@@ -1,735 +1,931 @@
-import { useState, useEffect } from "react";
-import { Github, MessageCircle, ChevronDown, Check } from "lucide-react";
-
-const features = [
-  {
-    number: "01",
-    title: "CRACKED SUPPORT",
-    description: "Play with any username. No Microsoft account needed. Offline UUID generation, zero auth servers.",
-    tag: "EXCLUSIVE"
-  },
-  {
-    number: "02",
-    title: "MODRINTH NATIVE",
-    description: "Browse 50,000+ mods and modpacks directly. One click install. SHA-512 verified every time.",
-    tag: "CORE"
-  },
-  {
-    number: "03",
-    title: "MODPACK INSTALLER",
-    description: "Drop a .mrpack file or search Modrinth. Mods, shaders, resourcepacks — all placed correctly.",
-    tag: "CORE"
-  },
-  {
-    number: "04",
-    title: "PERFORMANCE FIRST",
-    description: "Sodium, Lithium, Iris pre-bundled in perf profiles. Low-end presets for 4GB RAM machines.",
-    tag: "FREE"
-  },
-  {
-    number: "05",
-    title: "MULTI INSTANCE",
-    description: "Run Fabric 1.20, Forge 1.12, Vanilla 1.8 all at the same time. Isolated. Clean.",
-    tag: "CORE"
-  }
-];
-
-const faqs = [
-  {
-    q: "IS ZYROCLIENT FREE TO USE?",
-    a: "Yes. zyroclient is 100% free for players. We sustain development through optional partnerships with server networks and hosting providers — none of which affect your gameplay or place any ads in the client."
-  },
-  {
-    q: "HOW DOES LOCAL WORLD SHARING WORK?",
-    a: "When you toggle a single-player world to 'Public', zyroclient opens a secure encrypted tunnel and generates a shareable zyro:// link. Friends paste it into their client and join instantly — no port-forwarding, no router config, no third-party tools."
-  },
-  {
-    q: "DOES IT SUPPORT FORGE AND FABRIC PACKS NATIVE?",
-    a: "Yes. zyroclient supports Forge, Fabric, Quilt, and NeoForge out of the box. Modpacks from Modrinth install with one click — dependencies, loaders, and Java versions are resolved automatically."
-  },
-  {
-    q: "WHICH OPERATING SYSTEMS ARE SUPPORTED?",
-    a: "Linux is the primary platform today, with native builds optimized for performance. Windows and macOS clients are in active development and arrive soon."
-  },
-  {
-    q: "DO I NEED A MICROSOFT MINECRAFT ACCOUNT?",
-    a: "zyroclient supports both official Microsoft Minecraft accounts and offline/cracked accounts. While we recommend using an official Microsoft account (as many servers require premium authentication), zyroclient itself supports all features including multiplayer and skins with any account type. We never see or store your Microsoft account credentials."
-  }
-];
+import { useState, useEffect, useRef } from "react";
+import { MessageCircle, Check } from "lucide-react";
 
 export default function App() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState("home");
+  const [activeTab, setActiveTab] = useState("mods");
+  const [showAccountPopup, setShowAccountPopup] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const accountPopupRef = useRef<HTMLDivElement>(null);
 
+  // Custom cursor
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
+    const handleMouseMove = (e: MouseEvent) => {
+      setCursorPos({ x: e.clientX, y: e.clientY });
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  // Account popup click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (accountPopupRef.current && !accountPopupRef.current.contains(e.target as Node)) {
+        setShowAccountPopup(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // FPS counter animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            animateNumbers();
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+    const el = document.getElementById("fps-section");
+    if (el) observer.observe(el);
+    return () => {
+      if (el) observer.unobserve(el);
+    };
+  }, []);
+
+  const animateNumbers = () => {
+    const duration = 1500;
+    const start = performance.now();
+
+    const animate = (time: number) => {
+      const progress = Math.min((time - start) / duration, 1);
+
+      const fps1 = document.getElementById("fps-1");
+      const fps2 = document.getElementById("fps-2");
+      const fps3 = document.getElementById("fps-3");
+      const fps4 = document.getElementById("fps-4");
+
+      if (fps1) fps1.textContent = Math.floor(progress * 67).toString();
+      if (fps2) fps2.textContent = Math.floor(progress * 189).toString();
+      if (fps3) fps3.textContent = Math.floor(progress * 23).toString();
+      if (fps4) fps4.textContent = Math.floor(progress * 61).toString();
+
+      if (progress < 1) requestAnimationFrame(animate);
+      else {
+        if (fps1) fps1.textContent = "67";
+        if (fps2) fps2.textContent = "189";
+        if (fps3) fps3.textContent = "23";
+        if (fps4) fps4.textContent = "61";
+      }
+    };
+    requestAnimationFrame(animate);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText("curl -fsSL get.zyroclient.app | bash");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleMouseEnter = () => setIsHovering(true);
+  const handleMouseLeave = () => setIsHovering(false);
+
   return (
-    <div className="min-h-screen">
-      {/* Navbar */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 h-[56px] flex items-center justify-between px-6 md:px-12 transition-all duration-150 ${
-          scrolled ? "border-b border-[#B8FF00]" : ""
-        }`}
-        style={{ backgroundColor: "var(--black)" }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="text-[32px] font-bebas font-bold"
-            style={{ color: "var(--acid)" }}
-          >
-            ⚡
-          </div>
-          <div className="flex flex-col leading-none">
-            <span
-              className="text-2xl font-bebas font-bold"
-              style={{ color: "var(--acid)" }}
-            >
-              ZYRO
-            </span>
-            <span
-              className="text-sm font-dm-mono tracking-[0.2em]"
-              style={{ color: "var(--white)" }}
-            >
-              CLIENT
-            </span>
-          </div>
-        </div>
+    <div className="min-h-screen relative">
+      {/* Custom Cursor */}
+      <div
+        className="cursor-dot"
+        style={{
+          left: cursorPos.x - 3,
+          top: cursorPos.y - 3,
+        }}
+      />
+      <div
+        className={`cursor-ring ${isHovering ? "cursor-ring-hover" : ""}`}
+        style={{
+          left: cursorPos.x - 14,
+          top: cursorPos.y - 14,
+        }}
+      />
 
-        <div className="hidden md:flex items-center gap-8">
-          {["FEATURES", "PARTNERS", "FAQ", "GITHUB"].map((link) => (
-            <a
-              key={link}
-              href={`#${link.toLowerCase()}`}
-              className="text-xs font-dm-mono tracking-[0.2em] uppercase relative overflow-hidden"
-              style={{ color: "var(--muted)" }}
-            >
-              <span className="relative z-10 hover:text-[var(--acid)] transition-colors">
-                {link}
-              </span>
-              <span
-                className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-200"
-                style={{ backgroundColor: "var(--acid)" }}
-              ></span>
-            </a>
-          ))}
-        </div>
-
-        <a
-          href="#download"
-          className="btn-primary"
-        >
-          DOWNLOAD
-        </a>
-      </nav>
-
-      {/* Hero Section */}
-      <section
-        id="home"
-        className="relative min-h-screen flex flex-col justify-center px-6 md:px-12 pt-[56px]"
-        style={{ backgroundColor: "var(--black)" }}
-      >
-        <div className="grid-lines"></div>
-        <div className="max-w-7xl mx-auto w-full relative z-10">
-          <div
-            className="inline-block px-4 py-2 mb-6 text-xs font-dm-mono uppercase tracking-[0.15em]"
-            style={{ color: "var(--acid)" }}
-          >
-            [ OPEN SOURCE MINECRAFT LAUNCHER ]
+      {/* App Shell */}
+      <div className="min-h-screen flex flex-col">
+        {/* Fake Titlebar */}
+        <header className="app-titlebar sticky top-0 z-50 h-10 flex items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <div className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: "#FF5F57" }} />
+            <div className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: "#FEBC2E" }} />
+            <div className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: "#28C840" }} />
           </div>
-          <h1
-            className="font-bebas leading-[0.9] mb-4"
-            style={{ fontSize: "clamp(64px, 14vw, 120px)" }}
-          >
-            <span style={{ color: "var(--white)" }}>PLAY WITHOUT</span>
-            <br />
-            <span style={{ color: "var(--acid)" }}>LIMITS.</span>
-          </h1>
-          <p
-            className="text-sm md:text-base font-dm-mono max-w-xl mb-10 leading-relaxed"
-            style={{ color: "var(--muted)" }}
-          >
-            Cracked. Fast. Modrinth-native.
-            <br />
-            No Microsoft account required.
-          </p>
-          <div className="flex flex-wrap gap-4 mb-12">
-            <a href="#download" className="btn-primary">
-              DOWNLOAD FOR LINUX
-            </a>
-            <a
-              href="https://github.com/banerjee-aniket/zyroclient"
-              target="_blank"
-              rel="noreferrer"
-              className="btn-ghost"
-            >
-              VIEW ON GITHUB
-            </a>
+          <span className="font-dm-mono text-xs" style={{ color: "var(--muted)" }}>
+            Zyro Client — v0.1-beta
+          </span>
+          <div className="flex gap-4 font-dm-mono text-xs" style={{ color: "var(--muted)" }}>
+            <span>−</span>
+            <span>□</span>
+            <span>×</span>
           </div>
+        </header>
 
-          {/* Floating Stats */}
-          <div className="absolute bottom-12 right-6 md:right-12 flex flex-wrap gap-3">
-            {["2X FPS", "0 ADS", "100% FREE"].map((stat) => (
-              <div key={stat} className="stat-pill">
-                {stat}
+        <div className="flex flex-1">
+          {/* Sidebar */}
+          <aside className="app-sidebar w-[220px] sticky top-10 h-[calc(100vh-40px)] flex flex-col py-6 px-3 hidden md:flex">
+            {/* Logo */}
+            <div className="mb-8 flex items-center gap-3 px-2">
+              <div className="text-[32px] font-bebas font-bold" style={{ color: "var(--acid)" }}>
+                ⚡
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="flex flex-col leading-none">
+                <span className="text-[20px] font-bebas" style={{ color: "var(--white)" }}>
+                  ZYRO
+                </span>
+                <span className="text-[9px] font-dm-mono tracking-[0.2em]" style={{ color: "var(--muted)" }}>
+                  CLIENT
+                </span>
+              </div>
+            </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce">
-          <ChevronDown
-            className="w-8 h-8"
-            style={{ color: "var(--acid)" }}
-          />
-        </div>
-      </section>
+            {/* Nav */}
+            <nav className="flex-1 space-y-1">
+              {[
+                { id: "home", icon: "⚡", label: "HOME" },
+                { id: "features", icon: "▶", label: "INSTANCES" },
+                { id: "mods", icon: "⬡", label: "MODS" },
+                { id: "download", icon: "↓", label: "MODPACKS" },
+                { id: "faq", icon: "⚙", label: "SETTINGS" },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
+                    setActiveSection(item.id);
+                  }}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                  className={`app-sidebar-item w-full flex items-center gap-3 px-3 py-2 text-left`}
+                  style={{ color: activeSection === item.id ? "var(--acid)" : "var(--white)" }}
+                >
+                  <span className="text-sm">{item.icon}</span>
+                  <span className="font-dm-mono text-xs uppercase tracking-wider">{item.label}</span>
+                </button>
+              ))}
+            </nav>
 
-      {/* Marquee Ticker */}
-      <section className="w-full overflow-hidden py-4" style={{ backgroundColor: "var(--acid)" }}>
-        <div className="animate-marquee whitespace-nowrap">
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">MODRINTH NATIVE ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">CRACKED SUPPORT ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">MODPACK INSTALL ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">OPEN SOURCE ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">FABRIC + FORGE ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">LINUX FIRST ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">MODRINTH NATIVE ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">CRACKED SUPPORT ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">MODPACK INSTALL ✦</span>
-          <span className="font-bebas text-black text-3xl md:text-5xl mx-8">OPEN SOURCE ✦</span>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 md:py-32 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto w-full">
-          <div
-            className="text-xs font-dm-mono uppercase tracking-[0.2em] mb-2"
-            style={{ color: "var(--acid)" }}
-          >
-            // FEATURES
-          </div>
-          <h2
-            className="font-bebas mb-16"
-            style={{ fontSize: "clamp(48px, 8vw, 72px)" }}
-          >
-            BUILT DIFFERENT.
-          </h2>
-
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="group relative flex items-center gap-6 py-8 border-b transition-all duration-200"
-              style={{ borderColor: "var(--border)" }}
-            >
+            {/* Account */}
+            <div className="mt-auto relative">
               <div
-                className="font-bebas transition-all duration-200"
-                style={{
-                  fontSize: "clamp(80px, 15vw, 200px)",
-                  color: "var(--surface2)",
-                  ...(window.innerWidth > 768 ? { position: "absolute", left: 0 } : { position: "relative" })
-                }}
+                ref={accountPopupRef}
+                onClick={() => setShowAccountPopup(!showAccountPopup)}
+                className="flex items-center gap-3 px-2 py-3 cursor-pointer"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
               >
-                {feature.number}
-              </div>
-              <div className="flex-1 relative z-10 ml-0 md:ml-[180px]">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-2">
-                  <h3
-                    className="font-bebas"
-                    style={{ fontSize: "clamp(32px, 5vw, 48px)" }}
-                  >
-                    {feature.title}
-                  </h3>
-                  <span
-                    className="inline-block px-3 py-1 text-xs font-dm-mono uppercase tracking-[0.2em]"
-                    style={{
-                      backgroundColor: "transparent",
-                      border: "1px solid var(--acid)",
-                      color: "var(--acid)"
-                    }}
-                  >
-                    [{feature.tag}]
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-dm-mono text-sm"
+                  style={{ backgroundColor: "var(--acid)", color: "var(--black)" }}
+                >
+                  ZP
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-dm-mono text-xs" style={{ color: "var(--white)" }}>
+                    zyro_player
+                  </span>
+                  <span className="font-dm-mono text-[10px] flex items-center gap-1" style={{ color: "var(--acid)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--acid)" }} />
+                    OFFLINE
                   </span>
                 </div>
-                <p
-                  className="text-sm font-dm-mono leading-relaxed max-w-2xl"
-                  style={{ color: "var(--muted)" }}
-                >
-                  {feature.description}
-                </p>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* Fake Terminal */}
-      <section className="py-20 md:py-32 px-6 md:px-12">
-        <div
-          className="max-w-4xl mx-auto w-full rounded-sm overflow-hidden border"
-          style={{
-            backgroundColor: "var(--surface)",
-            borderColor: "var(--border)"
-          }}
-        >
-          {/* Terminal Header */}
-          <div
-            className="flex items-center gap-3 px-4 py-3 border-b"
-            style={{ backgroundColor: "var(--surface2)", borderColor: "var(--border)" }}
-          >
-            <div className="flex gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#FF5F56" }}></div>
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#FFBD2E" }}></div>
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#27CA40" }}></div>
-            </div>
-            <span
-              className="text-xs font-dm-mono"
-              style={{ color: "var(--muted)" }}
-            >
-              zyroclient — bash
-            </span>
-          </div>
-
-          {/* Terminal Body */}
-          <div className="p-6 font-dm-mono text-sm">
-            <div
-              className="mb-4 animate-fadeIn"
-              style={{ animationDelay: "0s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>$</span>
-              <span style={{ color: "var(--white)" }}> zyroclient install sodium</span>
-            </div>
-            <div
-              className="mb-4 animate-fadeIn"
-              style={{ animationDelay: "0.3s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>&gt;</span>
-              <span style={{ color: "var(--muted)" }}> Fetching from Modrinth... [████████████] 100%</span>
-            </div>
-            <div
-              className="mb-4 animate-fadeIn"
-              style={{ animationDelay: "0.6s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>&gt;</span>
-              <span style={{ color: "var(--white)" }}> SHA-512 verified ✓</span>
-            </div>
-            <div
-              className="mb-8 animate-fadeIn"
-              style={{ animationDelay: "0.9s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>&gt;</span>
-              <span style={{ color: "var(--muted)" }}> Installed to /instances/survival/mods/</span>
-            </div>
-
-            <div
-              className="mb-4 animate-fadeIn"
-              style={{ animationDelay: "1.2s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>$</span>
-              <span style={{ color: "var(--white)" }}> zyroclient launch "Survival World"</span>
-            </div>
-            <div
-              className="mb-4 animate-fadeIn"
-              style={{ animationDelay: "1.5s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>&gt;</span>
-              <span style={{ color: "var(--muted)" }}> Loading Fabric 0.15.11...</span>
-            </div>
-            <div
-              className="mb-4 animate-fadeIn"
-              style={{ animationDelay: "1.8s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>&gt;</span>
-              <span style={{ color: "var(--white)" }}> Auth: offline [zyro_player]</span>
-            </div>
-            <div
-              className="mb-4 animate-fadeIn"
-              style={{ animationDelay: "2.1s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>&gt;</span>
-              <span style={{ color: "var(--muted)" }}> Launching Minecraft 1.21.1...</span>
-            </div>
-            <div
-              className="animate-fadeIn"
-              style={{ animationDelay: "2.4s" }}
-            >
-              <span style={{ color: "var(--acid)" }}>✦</span>
-              <span style={{ color: "var(--white)" }}> Have fun.</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Partner Section */}
-      <section id="partners" className="py-20 md:py-32 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto w-full">
-          <div
-            className="text-xs font-dm-mono uppercase tracking-[0.2em] mb-2"
-            style={{ color: "var(--acid)" }}
-          >
-            // PARTNERS
-          </div>
-          <h2
-            className="font-bebas mb-16"
-            style={{ fontSize: "clamp(48px, 8vw, 72px)" }}
-          >
-            GROW TOGETHER.
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-8 md:gap-0">
-            {/* Server Owners */}
-            <div className="p-8 md:p-12 md:border-r" style={{ borderColor: "var(--border)" }}>
-              <h3
-                className="font-bebas mb-6"
-                style={{ fontSize: "36px" }}
-              >
-                FOR SERVER OWNERS
-              </h3>
-              <ul className="space-y-4 mb-8">
-                {[
-                  "Featured on launcher home screen",
-                  "Direct join button for your players",
-                  "Player analytics dashboard",
-                  "Official Partner badge"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check
-                      className="w-5 h-5 flex-shrink-0"
-                      style={{ color: "var(--acid)" }}
-                    />
-                    <span className="font-dm-mono text-sm" style={{ color: "var(--muted)" }}>
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Host Providers */}
-            <div className="p-8 md:p-12">
-              <h3
-                className="font-bebas mb-6"
-                style={{ fontSize: "36px" }}
-              >
-                FOR HOST PROVIDERS
-              </h3>
-              <ul className="space-y-4 mb-8">
-                {[
-                  "Co-branded install flow",
-                  "Revenue share program",
-                  "Featured in launcher",
-                  "Referral tracking"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check
-                      className="w-5 h-5 flex-shrink-0"
-                      style={{ color: "var(--acid)" }}
-                    />
-                    <span className="font-dm-mono text-sm" style={{ color: "var(--muted)" }}>
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <a
-            href="#"
-            className="btn-primary w-full"
-          >
-            APPLY FOR PARTNERSHIP →
-          </a>
-        </div>
-      </section>
-
-      {/* Stats Bar */}
-      <section
-        className="py-16 px-6 md:px-12"
-        style={{ backgroundColor: "var(--surface)" }}
-      >
-        <div className="max-w-7xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[
-            { num: "100%", label: "FREE FOREVER" },
-            { num: "0", label: "ADS OR TELEMETRY" },
-            { num: "50K+", label: "MODS ON MODRINTH" },
-            { num: "GPL-3", label: "OPEN SOURCE" }
-          ].map((stat, i) => (
-            <div
-              key={i}
-              className="text-center md:border-r py-4 last:border-0"
-              style={{ borderColor: "var(--border)" }}
-            >
-              <div
-                className="font-bebas mb-2"
-                style={{
-                  fontSize: "clamp(40px, 8vw, 64px)",
-                  color: "var(--acid)"
-                }}
-              >
-                {stat.num}
-              </div>
-              <div
-                className="text-xs font-dm-mono uppercase tracking-[0.2em]"
-                style={{ color: "var(--muted)" }}
-              >
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="py-20 md:py-32 px-6 md:px-12">
-        <div className="max-w-4xl mx-auto w-full">
-          <div
-            className="text-xs font-dm-mono uppercase tracking-[0.2em] mb-2"
-            style={{ color: "var(--acid)" }}
-          >
-            // FAQ
-          </div>
-          <h2
-            className="font-bebas mb-16"
-            style={{ fontSize: "clamp(48px, 8vw, 72px)" }}
-          >
-            QUESTIONS.
-          </h2>
-
-          {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="border-b py-6 transition-all duration-200"
-              style={{ borderColor: "var(--border)" }}
-            >
-              <button
-                onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                className="w-full flex items-center justify-between text-left"
-              >
-                <span
-                  className="font-dm-mono text-sm md:text-base uppercase tracking-wider"
-                  style={{ color: "var(--white)" }}
+              {showAccountPopup && (
+                <div
+                  className="absolute bottom-full left-0 right-0 mb-2 p-3 rounded-sm border"
+                  style={{ backgroundColor: "var(--panel)", borderColor: "var(--border2)" }}
                 >
-                  {faq.q}
-                </span>
-                <span
-                  className="font-dm-mono text-2xl"
-                  style={{ color: "var(--acid)" }}
-                >
-                  {openFaq === index ? "−" : "+"}
-                </span>
-              </button>
-              {openFaq === index && (
-                <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
-                  <p
-                    className="font-dm-mono text-sm leading-relaxed"
-                    style={{ color: "var(--muted)" }}
+                  <button
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    className="w-full text-left text-xs font-dm-mono flex items-center gap-2 py-1"
+                    style={{ color: "var(--white)" }}
                   >
-                    {faq.a}
-                  </p>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--acid)" }} />
+                    Play as Offline
+                  </button>
+                  <button
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    className="w-full text-left text-xs font-dm-mono flex items-center gap-2 py-1"
+                    style={{ color: "var(--muted2)" }}
+                  >
+                    <span>+</span>
+                    Add Microsoft Account
+                  </button>
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      </section>
+          </aside>
 
-      {/* Download CTA */}
-      <section
-        id="download"
-        className="py-20 md:py-32 px-6 md:px-12 relative overflow-hidden"
-        style={{ backgroundColor: "var(--acid)" }}
-      >
-        {/* Background stripes */}
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)"
-          }}
-        ></div>
-        <div className="max-w-4xl mx-auto w-full text-center relative z-10">
-          <h2
-            className="font-bebas mb-4 text-black"
-            style={{ fontSize: "clamp(48px, 10vw, 96px)" }}
-          >
-            READY TO PLAY?
-          </h2>
-          <p
-            className="font-dm-mono text-base mb-8"
-            style={{ color: "black" }}
-          >
-            Free. Always. No account required.
-          </p>
-          <a
-            href="#"
-            className="inline-flex items-center justify-center px-12 py-4 font-bebas text-xl transition-all duration-150 hover:brightness-105"
-            style={{
-              backgroundColor: "var(--black)",
-              color: "var(--white)",
-              border: "2px solid var(--black)"
-            }}
-          >
-            DOWNLOAD NOW
-          </a>
-          <p
-            className="font-dm-mono text-xs mt-4"
-            style={{ color: "black" }}
-          >
-            Linux · Windows · macOS
-          </p>
-        </div>
-      </section>
+          {/* Main Content */}
+          <main className="flex-1" style={{ backgroundColor: "var(--black)" }}>
+            {/* Home Section */}
+            <section id="home" className="min-h-screen px-4 md:px-8 py-8">
+              {/* Top bar */}
+              <div className="flex items-center justify-between mb-8">
+                <span className="font-dm-mono text-xs" style={{ color: "var(--muted)" }}>
+                  HOME / DASHBOARD
+                </span>
+                <div className="w-64">
+                  <input
+                    type="text"
+                    placeholder="Search mods, modpacks, instances..."
+                    className="w-full px-4 py-2 font-dm-mono text-xs rounded-sm outline-none border focus:border-[var(--acid)] transition-colors"
+                    style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)", color: "var(--white)" }}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                  />
+                </div>
+              </div>
 
-      {/* Footer */}
-      <footer
-        className="py-12 px-6 md:px-12 border-t"
-        style={{ backgroundColor: "var(--black)", borderColor: "var(--acid)" }}
-      >
-        <div className="max-w-7xl mx-auto w-full">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="grid md:grid-cols-3 gap-8">
+                {/* Left Column */}
+                <div className="md:col-span-2">
+                  <span className="font-dm-mono text-xs uppercase tracking-wider mb-4 block" style={{ color: "var(--muted)" }}>
+                    Last played
+                  </span>
+                  {/* Instance Card */}
+                  <div className="instance-card p-4 mb-6 rounded-sm">
+                    <div className="flex gap-4">
+                      <div
+                        className="w-24 h-24 rounded-sm flex items-center justify-center font-bebas text-4xl"
+                        style={{ backgroundColor: "var(--acid)", color: "var(--black)" }}
+                      >
+                        S
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-space-grotesk text-lg font-semibold mb-1" style={{ color: "var(--white)" }}>
+                          Survival · The Hollow
+                        </h3>
+                        <p className="font-dm-mono text-xs mb-2" style={{ color: "var(--muted2)" }}>
+                          Fabric 0.15 · MC 1.21.1
+                        </p>
+                        <p className="font-dm-mono text-xs" style={{ color: "var(--muted)" }}>
+                          47 mods
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      className="play-btn w-full mt-4 py-2 text-lg rounded-sm"
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      PLAY
+                    </button>
+                  </div>
+
+                  {/* Discover Cards */}
+                  <span className="font-dm-mono text-xs uppercase tracking-wider mb-4 block" style={{ color: "var(--muted)" }}>
+                    Discover
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { title: "Browse 50,000+ mods on Modrinth", action: "BROWSE MODS →" },
+                      { title: "Install any .mrpack modpack", action: "BROWSE MODPACKS →" },
+                      { title: "No Microsoft account needed", action: "PLAY OFFLINE →" },
+                    ].map((card, i) => (
+                      <div key={i} className="discover-card p-4 rounded-sm">
+                        <p className="font-space-grotesk text-sm mb-4" style={{ color: "var(--white)" }}>
+                          {card.title}
+                        </p>
+                        <button
+                          className="font-dm-mono text-xs uppercase tracking-wider"
+                          style={{ color: "var(--acid)" }}
+                          onMouseEnter={handleMouseEnter}
+                          onMouseLeave={handleMouseLeave}
+                        >
+                          {card.action}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="md:col-span-1">
+                  <span className="font-dm-mono text-xs uppercase tracking-wider mb-4 block" style={{ color: "var(--muted)" }}>
+                    Featured Servers
+                  </span>
+                  <div className="space-y-4 mb-8">
+                    {[
+                      { name: "Hypixel Network", ip: "mc.hypixel.net", players: "32k online" },
+                      { name: "The Hollow SMP", ip: "play.hollow.gg", players: "847 online" },
+                      { name: "Vanilla+ Survival", ip: "survival.gg", players: "312 online" },
+                    ].map((server, i) => (
+                      <div
+                        key={i}
+                        className="p-3 rounded-sm border"
+                        style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)" }}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-dm-mono text-xs" style={{ color: "var(--white)" }}>
+                            {server.name}
+                          </span>
+                          <button
+                            className="font-dm-mono text-[10px] px-2 py-0.5 rounded-sm"
+                            style={{ backgroundColor: "var(--border)", color: "var(--acid)" }}
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            JOIN
+                          </button>
+                        </div>
+                        <p className="font-dm-mono text-[10px] mb-1" style={{ color: "var(--muted)" }}>
+                          {server.ip}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--acid)" }} />
+                          <span className="font-dm-mono text-[10px]" style={{ color: "var(--acid)" }}>
+                            {server.players}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Public World Link */}
+                  <span className="font-dm-mono text-xs uppercase tracking-wider mb-4 block" style={{ color: "var(--muted)" }}>
+                    Public World Link
+                  </span>
+                  <div className="p-3 rounded-sm border" style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)" }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-dm-mono text-xs" style={{ color: "var(--white)" }}>
+                        Public Link
+                      </span>
+                      <div className="relative">
+                        <div
+                          className="w-10 h-5 rounded-full cursor-pointer transition-colors"
+                          style={{ backgroundColor: "var(--border)" }}
+                          onMouseEnter={handleMouseEnter}
+                          onMouseLeave={handleMouseLeave}
+                        >
+                          <div
+                            className="w-4 h-4 rounded-full absolute top-0.5 left-0.5 transition-transform"
+                            style={{ backgroundColor: "var(--white)" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="font-dm-mono text-[10px]" style={{ color: "var(--muted)" }}>
+                      Share your world with a link
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Bold Text Section */}
+            <section id="features" className="min-h-screen flex flex-col items-center justify-center px-4 md:px-8 py-20">
+              <div className="text-center">
+                <h1
+                  className="font-bebas leading-[0.9] animate-slide-up"
+                  style={{ fontSize: "clamp(64px, 14vw, 160px)", color: "var(--white)" }}
+                >
+                  MINECRAFT,
+                </h1>
+                <h1
+                  className="font-bebas leading-[0.9] animate-slide-up-delay-1"
+                  style={{ fontSize: "clamp(64px, 14vw, 160px)", color: "var(--white)" }}
+                >
+                  WITHOUT THE
+                </h1>
+                <h1
+                  className="font-bebas leading-[0.9] animate-slide-up-delay-2"
+                  style={{ fontSize: "clamp(64px, 14vw, 160px)", color: "var(--acid)" }}
+                >
+                  BULLSHIT.
+                </h1>
+                <p
+                  className="font-space-grotesk text-base md:text-lg mt-8 max-w-2xl mx-auto"
+                  style={{ color: "var(--muted2)" }}
+                >
+                  No forced Microsoft login. No launcher fees. No bloat. Just Minecraft.
+                </p>
+              </div>
+            </section>
+
+            {/* Features Tabs Section */}
+            <section id="mods" className="px-4 md:px-8 py-20">
+              <div className="max-w-6xl mx-auto">
+                {/* Tabs */}
+                <div className="flex gap-0 mb-8 border-b" style={{ borderColor: "var(--border)" }}>
+                  {[
+                    { id: "mods", label: "MODS" },
+                    { id: "modpacks", label: "MODPACKS" },
+                    { id: "instances", label: "INSTANCES" },
+                    { id: "settings", label: "SETTINGS" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`feature-tab px-6 py-3 font-dm-mono text-xs uppercase tracking-wider border-t border-l border-r ${
+                        activeTab === tab.id ? "active" : ""
+                      }`}
+                      style={{
+                        borderColor: activeTab === tab.id ? "var(--border)" : "transparent",
+                        color: activeTab === tab.id ? "var(--acid)" : "var(--muted2)",
+                      }}
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab Content */}
+                <div className="p-6 rounded-sm border" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}>
+                  {activeTab === "mods" && (
+                    <div>
+                      <div className="flex gap-4 mb-6">
+                        <input
+                          type="text"
+                          placeholder="Search mods..."
+                          className="flex-1 px-4 py-2 font-dm-mono text-xs rounded-sm outline-none border focus:border-[var(--acid)] transition-colors"
+                          style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)", color: "var(--white)" }}
+                          onMouseEnter={handleMouseEnter}
+                          onMouseLeave={handleMouseLeave}
+                        />
+                        <select
+                          className="px-4 py-2 font-dm-mono text-xs rounded-sm outline-none border focus:border-[var(--acid)] transition-colors"
+                          style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)", color: "var(--white)" }}
+                          onMouseEnter={handleMouseEnter}
+                          onMouseLeave={handleMouseLeave}
+                        >
+                          <option>Filter</option>
+                        </select>
+                      </div>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {[
+                          { name: "Sodium", desc: "Modern rendering engine for Minecraft.", dl: "15.2M" },
+                          { name: "Lithium", desc: "General-purpose optimization mod.", dl: "9.8M" },
+                          { name: "Iris", desc: "Modern shader mod for Minecraft.", dl: "6.5M" },
+                        ].map((mod, i) => (
+                          <div
+                            key={i}
+                            className="p-4 rounded-sm border"
+                            style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)" }}
+                          >
+                            <div className="flex items-center gap-3 mb-3">
+                              <div
+                                className="w-10 h-10 rounded-full flex items-center justify-center font-dm-mono text-sm"
+                                style={{ backgroundColor: "var(--acid)", color: "var(--black)" }}
+                              >
+                                {mod.name.charAt(0)}
+                              </div>
+                              <div>
+                                <h4 className="font-space-grotesk font-semibold text-sm" style={{ color: "var(--white)" }}>
+                                  {mod.name}
+                                </h4>
+                                <p className="font-dm-mono text-[10px]" style={{ color: "var(--muted)" }}>
+                                  {mod.dl} downloads
+                                </p>
+                              </div>
+                            </div>
+                            <p className="font-dm-mono text-xs mb-3" style={{ color: "var(--muted2)" }}>
+                              {mod.desc}
+                            </p>
+                            <button
+                              className="play-btn w-full py-2 text-sm rounded-sm"
+                              onMouseEnter={handleMouseEnter}
+                              onMouseLeave={handleMouseLeave}
+                            >
+                              INSTALL
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "modpacks" && (
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {[
+                        { name: "All the Mods 10", version: "1.21", mods: "198 mods" },
+                        { name: "Create: Above & Beyond", version: "1.20.1", mods: "152 mods" },
+                        { name: "StoneBlock 3", version: "1.19.2", mods: "210 mods" },
+                        { name: "SkyFactory 5", version: "1.21", mods: "125 mods" },
+                      ].map((pack, i) => (
+                        <div
+                          key={i}
+                          className="p-4 rounded-sm border"
+                          style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)" }}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-space-grotesk font-semibold text-sm" style={{ color: "var(--white)" }}>
+                              {pack.name}
+                            </h4>
+                            <span
+                              className="font-dm-mono text-[10px] px-2 py-0.5 rounded-sm"
+                              style={{ backgroundColor: "var(--border)", color: "var(--acid)" }}
+                            >
+                              {pack.version}
+                            </span>
+                          </div>
+                          <p className="font-dm-mono text-xs mb-3" style={{ color: "var(--muted)" }}>
+                            {pack.mods}
+                          </p>
+                          <button
+                            className="play-btn w-full py-2 text-sm rounded-sm"
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            INSTALL PACK
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeTab === "instances" && (
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {[
+                        { name: "Survival World", loader: "Fabric 1.21", date: "Last played 2h ago" },
+                        { name: "Creative Testing", loader: "Forge 1.19.2", date: "Last played 1d ago" },
+                        { name: "Mod Dev", loader: "Quilt 1.20.1", date: "Last played 3d ago" },
+                      ].map((instance, i) => (
+                        <div
+                          key={i}
+                          className="p-4 rounded-sm border"
+                          style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)" }}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <div
+                              className="w-12 h-12 rounded-sm flex items-center justify-center font-bebas text-2xl"
+                              style={{ backgroundColor: "var(--acid)", color: "var(--black)" }}
+                            >
+                              {instance.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h4 className="font-space-grotesk font-semibold text-sm" style={{ color: "var(--white)" }}>
+                                {instance.name}
+                              </h4>
+                              <p className="font-dm-mono text-[10px]" style={{ color: "var(--muted)" }}>
+                                {instance.loader}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="font-dm-mono text-xs mb-3" style={{ color: "var(--muted2)" }}>
+                            {instance.date}
+                          </p>
+                          <button
+                            className="play-btn w-full py-2 text-sm rounded-sm"
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            ▶ PLAY
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeTab === "settings" && (
+                    <div>
+                      <h3 className="font-dm-mono text-xs uppercase tracking-wider mb-4" style={{ color: "var(--muted)" }}>
+                        Account
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 rounded-sm" style={{ backgroundColor: "var(--panel)" }}>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm">✦</span>
+                            <span className="font-dm-mono text-xs" style={{ color: "var(--white)" }}>
+                              Microsoft Account
+                            </span>
+                          </div>
+                          <button
+                            className="font-dm-mono text-xs px-3 py-1 rounded-sm"
+                            style={{ backgroundColor: "var(--border)", color: "var(--white)" }}
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            ADD
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-sm" style={{ backgroundColor: "var(--panel)" }}>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm">✦</span>
+                            <span className="font-dm-mono text-xs" style={{ color: "var(--white)" }}>
+                              Offline Account
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-dm-mono text-xs" style={{ color: "var(--muted)" }}>
+                              zyro_player
+                            </span>
+                            <span
+                              className="font-dm-mono text-[10px] px-2 py-0.5 rounded-sm"
+                              style={{ backgroundColor: "var(--acid)", color: "var(--black)" }}
+                            >
+                              ACTIVE
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* FPS Section */}
+            <section id="download" className="px-4 md:px-8 py-20" ref={(el) => { if (el) el.id = "fps-section"; }}>
+              <div className="max-w-4xl mx-auto">
+                <div className="terminal-card p-8 rounded-sm">
+                  <p className="font-dm-mono text-xs uppercase tracking-wider mb-6" style={{ color: "var(--muted)" }}>
+                    &gt; BENCHMARK RESULTS — i5 12th gen, 8GB RAM, GTX 1060
+                  </p>
+
+                  <div className="mb-8">
+                    <div className="flex justify-between items-end mb-2">
+                      <span className="font-dm-mono text-sm" style={{ color: "var(--muted2)" }}>
+                        WITHOUT ZYRO CLIENT
+                      </span>
+                      <span className="font-bebas text-5xl" style={{ color: "var(--acid)" }}>
+                        <span id="fps-1">0</span>
+                      </span>
+                    </div>
+                    <div className="w-full h-1" style={{ backgroundColor: "var(--border)" }}>
+                      <div className="h-full" style={{ backgroundColor: "var(--border)", width: "35%" }} />
+                    </div>
+                  </div>
+
+                  <div className="mb-8">
+                    <div className="flex justify-between items-end mb-2">
+                      <span className="font-dm-mono text-sm" style={{ color: "var(--muted2)" }}>
+                        WITH SODIUM + LITHIUM + IRIS
+                      </span>
+                      <span className="font-bebas text-5xl" style={{ color: "var(--acid)" }}>
+                        <span id="fps-2">0</span>
+                      </span>
+                    </div>
+                    <div className="w-full h-1" style={{ backgroundColor: "var(--border)" }}>
+                      <div className="h-full" style={{ backgroundColor: "var(--acid)", width: "100%" }} />
+                    </div>
+                    <p className="font-dm-mono text-xs mt-2 text-right" style={{ color: "var(--acid)" }}>
+                      +182% ▲
+                    </p>
+                  </div>
+
+                  <div className="pt-8 border-t" style={{ borderColor: "var(--border)" }}>
+                    <p className="font-dm-mono text-xs uppercase tracking-wider mb-6" style={{ color: "var(--muted)" }}>
+                      LOW-END PRESET (4GB RAM)
+                    </p>
+
+                    <div className="mb-4">
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="font-dm-mono text-sm" style={{ color: "var(--muted2)" }}>
+                          WITHOUT ZYRO CLIENT
+                        </span>
+                        <span className="font-bebas text-4xl" style={{ color: "var(--acid)" }}>
+                          <span id="fps-3">0</span>
+                        </span>
+                      </div>
+                      <div className="w-full h-1" style={{ backgroundColor: "var(--border)" }}>
+                        <div className="h-full" style={{ backgroundColor: "var(--border)", width: "38%" }} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="font-dm-mono text-sm" style={{ color: "var(--muted2)" }}>
+                          WITH PERFORMANCE PROFILE
+                        </span>
+                        <span className="font-bebas text-4xl" style={{ color: "var(--acid)" }}>
+                          <span id="fps-4">0</span>
+                        </span>
+                      </div>
+                      <div className="w-full h-1" style={{ backgroundColor: "var(--border)" }}>
+                        <div className="h-full" style={{ backgroundColor: "var(--acid)", width: "100%" }} />
+                      </div>
+                      <p className="font-dm-mono text-xs mt-2 text-right" style={{ color: "var(--acid)" }}>
+                        +165% ▲
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Partner Section */}
+            <section id="faq" className="px-4 md:px-8 py-20">
+              <div className="max-w-3xl mx-auto">
+                <div className="partner-modal p-8">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#FF5F57" }} />
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#FEBC2E" }} />
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#28C840" }} />
+                    <span className="font-dm-mono text-xs ml-2" style={{ color: "var(--muted)" }}>
+                      partner-program.exe
+                    </span>
+                  </div>
+
+                  <h2 className="font-bebas text-4xl mb-8" style={{ color: "var(--white)" }}>
+                    PARTNER WITH ZYRO CLIENT
+                  </h2>
+
+                  <div className="grid md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                      <h3 className="font-space-grotesk text-xl font-semibold mb-4" style={{ color: "var(--white)" }}>
+                        For Server Owners
+                      </h3>
+                      <p className="font-dm-mono text-sm mb-6" style={{ color: "var(--muted2)" }}>
+                        Get your server network featured natively inside the client dashboard.
+                      </p>
+                      <ul className="space-y-2">
+                        {[
+                          "Featured server placement",
+                          "Direct join button",
+                          "Player analytics",
+                          "Official Partner badge",
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-center gap-2">
+                            <Check className="w-4 h-4" style={{ color: "var(--acid)" }} />
+                            <span className="font-dm-mono text-xs" style={{ color: "var(--white)" }}>
+                              {item}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-space-grotesk text-xl font-semibold mb-4" style={{ color: "var(--white)" }}>
+                        For Hosting Providers
+                      </h3>
+                      <p className="font-dm-mono text-sm mb-6" style={{ color: "var(--muted2)" }}>
+                        Reach every Zyro Client user.
+                      </p>
+                      <ul className="space-y-2">
+                        {[
+                          "Co-branded install flow",
+                          "Revenue share program",
+                          "Featured in launcher home",
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-center gap-2">
+                            <Check className="w-4 h-4" style={{ color: "var(--acid)" }} />
+                            <span className="font-dm-mono text-xs" style={{ color: "var(--white)" }}>
+                              {item}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <button
+                    className="play-btn w-full py-3 text-lg rounded-sm"
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    APPLY FOR PARTNERSHIP
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* FAQ Section */}
+            <section className="px-4 md:px-8 py-20">
+              <div className="max-w-3xl mx-auto">
+                <div className="terminal-card p-8 rounded-sm">
+                  <p className="font-dm-mono text-xs mb-8" style={{ color: "var(--muted)" }}>
+                    &gt; zyroclient --help
+                  </p>
+
+                  <h2 className="font-dm-mono text-xs uppercase tracking-wider mb-6" style={{ color: "var(--white)" }}>
+                    FREQUENTLY ASKED QUESTIONS
+                  </h2>
+
+                  <div className="space-y-6">
+                    {[
+                      { q: "Is Zyro Client free?", a: "Yes. Always. No premium tier." },
+                      { q: "Do I need a Microsoft account?", a: "No. Offline mode supported. Just enter a username." },
+                      { q: "Does it support Fabric and Forge?", a: "Yes. And Quilt. And NeoForge." },
+                      { q: "What OS does it support?", a: "Linux (primary). Windows and macOS coming soon." },
+                      { q: "Is it safe?", a: "We never touch your Microsoft credentials. Offline mode stores nothing." },
+                    ].map((item, i) => (
+                      <div key={i}>
+                        <p className="font-dm-mono text-sm mb-2" style={{ color: "var(--acid)" }}>
+                          Q: {item.q}
+                        </p>
+                        <p className="font-dm-mono text-sm" style={{ color: "var(--white)" }}>
+                          A: {item.a}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="mt-8 font-dm-mono text-sm">
+                    <span style={{ color: "var(--acid)" }}>&gt;</span>
+                    <span className="terminal-blink ml-1" style={{ color: "var(--white)" }}>_</span>
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Download Section */}
+            <section className="px-4 md:px-8 py-20">
+              <div className="max-w-3xl mx-auto text-center">
+                <span className="font-dm-mono text-xs uppercase tracking-wider mb-4 block" style={{ color: "var(--muted)" }}>
+                  GET STARTED IN SECONDS
+                </span>
+                <h1
+                  className="font-bebas mb-8"
+                  style={{ fontSize: "clamp(48px, 12vw, 100px)", color: "var(--white)" }}
+                >
+                  DOWNLOAD.
+                </h1>
+
                 <div
-                  className="text-2xl font-bebas font-bold"
-                  style={{ color: "var(--acid)" }}
+                  className="p-4 rounded-sm border mb-6 flex items-center justify-between gap-4"
+                  style={{ backgroundColor: "var(--surface)", borderColor: "var(--border2)" }}
                 >
-                  ⚡
-                </div>
-                <div className="flex flex-col leading-none">
-                  <span
-                    className="text-xl font-bebas font-bold"
-                    style={{ color: "var(--acid)" }}
+                  <code className="font-dm-mono text-sm text-left" style={{ color: "var(--white)" }}>
+                    curl -fsSL
+                    <br />
+                    get.zyroclient.app | bash
+                  </code>
+                  <button
+                    onClick={handleCopy}
+                    className="font-dm-mono text-xs px-4 py-2 rounded-sm transition-colors"
+                    style={{
+                      backgroundColor: copied ? "var(--acid)" : "var(--border)",
+                      color: copied ? "var(--black)" : "var(--acid)",
+                    }}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
                   >
-                    ZYRO
-                  </span>
-                  <span
-                    className="text-xs font-dm-mono tracking-[0.2em]"
-                    style={{ color: "var(--white)" }}
-                  >
-                    CLIENT
-                  </span>
+                    {copied ? "COPIED ✓" : "COPY"}
+                  </button>
+                </div>
+
+                <button
+                  className="play-btn w-full py-4 text-xl rounded-sm"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  ↓ DOWNLOAD FOR LINUX — FREE
+                </button>
+
+                <div className="mt-6 space-y-1">
+                  <p className="font-dm-mono text-xs" style={{ color: "var(--muted)" }}>
+                    Windows and macOS builds coming soon
+                  </p>
+                  <p className="font-dm-mono text-xs" style={{ color: "var(--muted)" }}>
+                    v0.1-beta — released June 2026
+                  </p>
                 </div>
               </div>
-              <p
-                className="text-xs font-dm-mono"
-                style={{ color: "var(--muted)" }}
-              >
-                Not affiliated with Mojang or Microsoft.
-              </p>
-            </div>
+            </section>
 
-            <div className="grid grid-cols-3 gap-8 md:gap-16">
-              <div>
-                <h4
-                  className="font-dm-mono text-xs uppercase tracking-wider mb-4"
-                  style={{ color: "var(--white)" }}
-                >
-                  CLIENT
-                </h4>
-                <ul className="space-y-2">
-                  {["Download", "Features", "Changelog", "Roadmap"].map((link, i) => (
-                    <li key={i}>
+            {/* Footer */}
+            <footer className="px-4 md:px-8 py-8 border-t" style={{ borderColor: "var(--border)" }}>
+              <div className="max-w-7xl mx-auto">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bebas text-sm" style={{ color: "var(--acid)" }}>
+                      ZYRO CLIENT
+                    </span>
+                  </div>
+                  <div className="flex gap-6">
+                    {["Features", "Partners", "FAQ", "Download"].map((item, i) => (
                       <a
-                        href="#"
-                        className="font-dm-mono text-sm hover:text-[var(--acid)] transition-colors"
-                        style={{ color: "var(--muted)" }}
+                        key={i}
+                        href={`#${item.toLowerCase()}`}
+                        className="font-dm-mono text-xs"
+                        style={{ color: "var(--muted2)" }}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
                       >
-                        {link}
+                        {item}
                       </a>
-                    </li>
-                  ))}
-                </ul>
+                    ))}
+                  </div>
+                  <a
+                    href="#"
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <MessageCircle className="w-5 h-5" style={{ color: "var(--muted2)" }} />
+                  </a>
+                </div>
+                <div className="flex flex-col md:flex-row justify-between items-center gap-2">
+                  <p className="font-dm-mono text-[10px]" style={{ color: "#333" }}>
+                    © 2026 Zyro Client by Zyraa Host.
+                  </p>
+                  <p className="font-dm-mono text-[10px]" style={{ color: "#333" }}>
+                    Not affiliated with Mojang or Microsoft.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4
-                  className="font-dm-mono text-xs uppercase tracking-wider mb-4"
-                  style={{ color: "var(--white)" }}
-                >
-                  COMMUNITY
-                </h4>
-                <ul className="space-y-2">
-                  {["Discord", "GitHub", "Partners", "Servers"].map((link, i) => (
-                    <li key={i}>
-                      <a
-                        href="#"
-                        className="font-dm-mono text-sm hover:text-[var(--acid)] transition-colors"
-                        style={{ color: "var(--muted)" }}
-                      >
-                        {link}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4
-                  className="font-dm-mono text-xs uppercase tracking-wider mb-4"
-                  style={{ color: "var(--white)" }}
-                >
-                  LEGAL
-                </h4>
-                <ul className="space-y-2">
-                  {["Privacy", "Terms", "Disclaimer", "Contact"].map((link, i) => (
-                    <li key={i}>
-                      <a
-                        href="#"
-                        className="font-dm-mono text-sm hover:text-[var(--acid)] transition-colors"
-                        style={{ color: "var(--muted)" }}
-                      >
-                        {link}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <a
-                href="#"
-                aria-label="Discord"
-                className="p-2 hover:bg-[var(--surface2)] transition-colors"
-              >
-                <MessageCircle
-                  className="w-6 h-6"
-                  style={{ color: "var(--muted)" }}
-                />
-              </a>
-              <a
-                href="https://github.com/banerjee-aniket/zyroclient"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="GitHub"
-                className="p-2 hover:bg-[var(--surface2)] transition-colors"
-              >
-                <Github
-                  className="w-6 h-6"
-                  style={{ color: "var(--muted)" }}
-                />
-              </a>
-            </div>
-          </div>
-
-          <div
-            className="border-t pt-6"
-            style={{ borderColor: "var(--border)" }}
-          >
-            <p
-              className="font-dm-mono text-xs"
-              style={{ color: "var(--muted)" }}
-            >
-              © 2026 Zyro Client by Zyraa Host.
-            </p>
-          </div>
+            </footer>
+          </main>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
