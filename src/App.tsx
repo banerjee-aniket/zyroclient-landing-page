@@ -129,18 +129,16 @@ export default function App() {
           <aside className="app-sidebar w-[220px] sticky top-10 h-[calc(100vh-40px)] flex flex-col py-6 px-3 hidden md:flex">
             {/* Logo */}
             <div className="mb-8 flex items-center gap-3 px-2">
-              <div className="text-[32px] font-bebas font-bold" style={{ color: "var(--acid)" }}>
-                ⚡
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-[20px] font-bebas" style={{ color: "var(--white)" }}>
-                  ZYRO
-                </span>
-                <span className="text-[9px] font-dm-mono tracking-[0.2em]" style={{ color: "var(--muted)" }}>
-                  CLIENT
-                </span>
-              </div>
-            </div>
+                    <img src="/logo.png" alt="ZYRO CLIENT Logo" className="w-12 h-12" />
+                    <div className="flex flex-col leading-none">
+                      <span className="text-[20px] font-bebas" style={{ color: "var(--white)" }}>
+                        ZYRO
+                      </span>
+                      <span className="text-[9px] font-dm-mono tracking-[0.2em]" style={{ color: "var(--muted)" }}>
+                        CLIENT
+                      </span>
+                    </div>
+                  </div>
 
             {/* Nav */}
             <nav className="flex-1 space-y-1">
@@ -226,6 +224,10 @@ export default function App() {
           <main className="flex-1" style={{ backgroundColor: "var(--black)" }}>
             {/* Home Section */}
             <section id="home" className="min-h-screen px-4 md:px-8 py-8">
+              {/* Banner */}
+              <div className="mb-8 rounded-sm overflow-hidden border" style={{ borderColor: "var(--border)" }}>
+                <img src="/banner.png" alt="ZYRO CLIENT Banner" className="w-full" />
+              </div>
               {/* Top bar */}
               <div className="flex items-center justify-between mb-8">
                 <span className="font-dm-mono text-xs" style={{ color: "var(--muted)" }}>
