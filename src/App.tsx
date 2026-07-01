@@ -2,13 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { MessageCircle, Check } from "lucide-react";
 
 export default function App() {
-  const [activeSection, setActiveSection] = useState("home");
+  const [activeSection, setActiveSection] = useState("features");
   const [activeTab, setActiveTab] = useState("mods");
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [copied, setCopied] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   const accountPopupRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<number | null>(null);
 
   // Custom cursor
   useEffect(() => {
@@ -50,6 +52,28 @@ export default function App() {
     };
   }, []);
 
+  // Active section highlighting on scroll
+  useEffect(() => {
+    const sections = ["features", "partners", "documentation"];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isScrolling) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { threshold: 0.3, rootMargin: "-10% 0px -50% 0px" }
+    );
+
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [isScrolling]);
+
   const animateNumbers = () => {
     const duration = 1500;
     const start = performance.now();
@@ -82,6 +106,14 @@ export default function App() {
     navigator.clipboard.writeText("curl -fsSL get.zyroclient.app | bash");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleNavClick = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    setActiveSection(id);
+    setIsScrolling(true);
+    if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 800);
   };
 
   const handleMouseEnter = () => setIsHovering(true);
@@ -143,21 +175,16 @@ export default function App() {
             {/* Nav */}
             <nav className="flex-1 space-y-1">
               {[
-                { id: "home", icon: "⚡", label: "HOME" },
-                { id: "features", icon: "▶", label: "INSTANCES" },
-                { id: "mods", icon: "⬡", label: "MODS" },
-                { id: "download", icon: "↓", label: "MODPACKS" },
-                { id: "faq", icon: "⚙", label: "SETTINGS" },
+                { id: "features", icon: "▶", label: "FEATURES" },
+                { id: "partners", icon: "◆", label: "PARTNERS" },
+                { id: "documentation", icon: "?", label: "DOCS" },
               ].map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
-                    setActiveSection(item.id);
-                  }}
+                  onClick={() => handleNavClick(item.id)}
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
-                  className={`app-sidebar-item w-full flex items-center gap-3 px-3 py-2 text-left`}
+                  className={`app-sidebar-item w-full flex items-center gap-3 px-3 py-2 text-left ${activeSection === item.id ? "active" : ""}`}
                   style={{ color: activeSection === item.id ? "var(--acid)" : "var(--white)" }}
                 >
                   <span className="text-sm">{item.icon}</span>
@@ -715,7 +742,7 @@ export default function App() {
             </section>
 
             {/* Partner Section */}
-            <section id="faq" className="px-4 md:px-8 py-20">
+            <section id="partners" className="px-4 md:px-8 py-20">
               <div className="max-w-3xl mx-auto">
                 <div className="partner-modal p-8">
                   <div className="flex items-center gap-2 mb-6">
@@ -791,7 +818,7 @@ export default function App() {
             </section>
 
             {/* FAQ Section */}
-            <section className="px-4 md:px-8 py-20">
+            <section id="faq" className="px-4 md:px-8 py-20">
               <div className="max-w-3xl mx-auto">
                 <div className="terminal-card p-8 rounded-sm">
                   <p className="font-dm-mono text-xs mb-8" style={{ color: "var(--muted)" }}>
@@ -829,8 +856,47 @@ export default function App() {
               </div>
             </section>
 
+            {/* Documentation Section */}
+            <section id="documentation" className="px-4 md:px-8 py-20">
+              <div className="max-w-3xl mx-auto">
+                <div className="terminal-card p-8 rounded-sm">
+                  <p className="font-dm-mono text-xs mb-8" style={{ color: "var(--muted)" }}>
+                    &gt; zyroclient --docs
+                  </p>
+
+                  <h2 className="font-dm-mono text-xs uppercase tracking-wider mb-6" style={{ color: "var(--white)" }}>
+                    DOCUMENTATION
+                  </h2>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {[
+                      { title: "Build from source", desc: "CMake + Qt6 build guide for Linux." },
+                      { title: "Offline accounts", desc: "How to play without a Microsoft account." },
+                      { title: "Modrinth packs", desc: "Install .mrpack modpacks in one click." },
+                      { title: "Partner API", desc: "Integrate your server or hosting service." },
+                    ].map((doc, i) => (
+                      <div
+                        key={i}
+                        className="p-4 rounded-sm border cursor-pointer"
+                        style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)" }}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <h4 className="font-dm-mono text-xs uppercase tracking-wider mb-2" style={{ color: "var(--acid)" }}>
+                          {doc.title}
+                        </h4>
+                        <p className="font-dm-mono text-xs" style={{ color: "var(--muted2)" }}>
+                          {doc.desc}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Download Section */}
-            <section className="px-4 md:px-8 py-20">
+            <section id="download" className="px-4 md:px-8 py-20">
               <div className="max-w-3xl mx-auto text-center">
                 <span className="font-dm-mono text-xs uppercase tracking-wider mb-4 block" style={{ color: "var(--muted)" }}>
                   GET STARTED IN SECONDS
