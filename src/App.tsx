@@ -2,13 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { MessageCircle, Check } from "lucide-react";
 
 export default function App() {
-  const [activeSection, setActiveSection] = useState("home");
+  const [activeSection, setActiveSection] = useState("features");
   const [activeTab, setActiveTab] = useState("mods");
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [copied, setCopied] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   const accountPopupRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<number | null>(null);
 
   // Custom cursor
   useEffect(() => {
@@ -49,6 +51,28 @@ export default function App() {
       if (el) observer.unobserve(el);
     };
   }, []);
+
+  // Active section highlighting on scroll
+  useEffect(() => {
+    const sections = ["features", "partners", "documentation"];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isScrolling) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { threshold: 0.3, rootMargin: "-10% 0px -50% 0px" }
+    );
+
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [isScrolling]);
 
   const animateNumbers = () => {
     const duration = 1500;
