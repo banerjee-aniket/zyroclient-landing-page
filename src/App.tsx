@@ -856,6 +856,45 @@ export default function App() {
               </div>
             </section>
 
+            {/* Documentation Section */}
+            <section id="documentation" className="px-4 md:px-8 py-20">
+              <div className="max-w-3xl mx-auto">
+                <div className="terminal-card p-8 rounded-sm">
+                  <p className="font-dm-mono text-xs mb-8" style={{ color: "var(--muted)" }}>
+                    &gt; zyroclient --docs
+                  </p>
+
+                  <h2 className="font-dm-mono text-xs uppercase tracking-wider mb-6" style={{ color: "var(--white)" }}>
+                    DOCUMENTATION
+                  </h2>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {[
+                      { title: "Build from source", desc: "CMake + Qt6 build guide for Linux." },
+                      { title: "Offline accounts", desc: "How to play without a Microsoft account." },
+                      { title: "Modrinth packs", desc: "Install .mrpack modpacks in one click." },
+                      { title: "Partner API", desc: "Integrate your server or hosting service." },
+                    ].map((doc, i) => (
+                      <div
+                        key={i}
+                        className="p-4 rounded-sm border cursor-pointer"
+                        style={{ backgroundColor: "var(--panel)", borderColor: "var(--border)" }}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <h4 className="font-dm-mono text-xs uppercase tracking-wider mb-2" style={{ color: "var(--acid)" }}>
+                          {doc.title}
+                        </h4>
+                        <p className="font-dm-mono text-xs" style={{ color: "var(--muted2)" }}>
+                          {doc.desc}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Download Section */}
             <section className="px-4 md:px-8 py-20">
               <div className="max-w-3xl mx-auto text-center">
