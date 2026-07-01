@@ -818,7 +818,7 @@ export default function App() {
             </section>
 
             {/* FAQ Section */}
-            <section className="px-4 md:px-8 py-20">
+            <section id="faq" className="px-4 md:px-8 py-20">
               <div className="max-w-3xl mx-auto">
                 <div className="terminal-card p-8 rounded-sm">
                   <p className="font-dm-mono text-xs mb-8" style={{ color: "var(--muted)" }}>
@@ -896,7 +896,7 @@ export default function App() {
             </section>
 
             {/* Download Section */}
-            <section className="px-4 md:px-8 py-20">
+            <section id="download" className="px-4 md:px-8 py-20">
               <div className="max-w-3xl mx-auto text-center">
                 <span className="font-dm-mono text-xs uppercase tracking-wider mb-4 block" style={{ color: "var(--muted)" }}>
                   GET STARTED IN SECONDS
