@@ -175,21 +175,16 @@ export default function App() {
             {/* Nav */}
             <nav className="flex-1 space-y-1">
               {[
-                { id: "home", icon: "⚡", label: "HOME" },
-                { id: "features", icon: "▶", label: "INSTANCES" },
-                { id: "mods", icon: "⬡", label: "MODS" },
-                { id: "download", icon: "↓", label: "MODPACKS" },
-                { id: "faq", icon: "⚙", label: "SETTINGS" },
+                { id: "features", icon: "▶", label: "FEATURES" },
+                { id: "partners", icon: "◆", label: "PARTNERS" },
+                { id: "documentation", icon: "?", label: "DOCS" },
               ].map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
-                    setActiveSection(item.id);
-                  }}
+                  onClick={() => handleNavClick(item.id)}
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
-                  className={`app-sidebar-item w-full flex items-center gap-3 px-3 py-2 text-left`}
+                  className={`app-sidebar-item w-full flex items-center gap-3 px-3 py-2 text-left ${activeSection === item.id ? "active" : ""}`}
                   style={{ color: activeSection === item.id ? "var(--acid)" : "var(--white)" }}
                 >
                   <span className="text-sm">{item.icon}</span>
