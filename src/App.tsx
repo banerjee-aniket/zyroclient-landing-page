@@ -742,7 +742,7 @@ export default function App() {
             </section>
 
             {/* Partner Section */}
-            <section id="faq" className="px-4 md:px-8 py-20">
+            <section id="partners" className="px-4 md:px-8 py-20">
               <div className="max-w-3xl mx-auto">
                 <div className="partner-modal p-8">
                   <div className="flex items-center gap-2 mb-6">
